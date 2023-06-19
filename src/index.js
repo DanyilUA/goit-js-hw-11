@@ -3,13 +3,15 @@ import axios from 'axios';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
+import './style.css';
+
 
 const formEl = document.querySelector('.search-form');
 const inputEl = document.querySelector('input[name="searchQuery"]');
 const galleryList = document.querySelector('.gallery');
 const buttonLoadMore = document.querySelector('.load-more');
 
-let currentPage = 13;
+let currentPage = 1;
 let totalPages = 1;
 
 const BASE_URL = 'https://pixabay.com/api/';
@@ -45,8 +47,8 @@ async function getImage(inputValue, page) {
         console.log(response);
         const totalHits = response.data.totalHits;
         const hitsPerPage = response.data.hits.length;
-        totalPages = Math.ceil(totalHits / hitsPerPage);
-      
+      totalPages = Math.ceil(totalHits / hitsPerPage);
+
         return response.data;
         } catch (error) {
     console.log(error);
@@ -54,26 +56,53 @@ async function getImage(inputValue, page) {
 }
 
 function createMarkup(arr) {
-  return arr.map(
-      ({ webformatURL, tags, likes, views, comments, downloads }) => `
-        <div class="photo-card">
-          <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-          <div class="info">
-            <p class="info-item">
-              <b>likes ${likes}</b>
-            </p>
-            <p class="info-item">
-              <b>views ${views}</b>
-            </p>
-            <p class="info-item">
-              <b>comments ${comments}</b>
-            </p>
-            <p class="info-item">
-              <b>downloads ${downloads}</b>
-            </p>
-          </div>
-        </div>
-      `
+  return arr
+    .map(
+      ({
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) =>
+        //   `<div class="photo-card">
+        //       <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+        //       <div class="info">
+        //         <p class="info-item">
+        //           <b>likes ${likes}</b>
+        //         </p>
+        //         <p class="info-item">
+        //           <b>views ${views}</b>
+        //         </p>
+        //         <p class="info-item">
+        //           <b>comments ${comments}</b>
+        //         </p>
+        //         <p class="info-item">
+        //           <b>downloads ${downloads}</b>
+        //         </p>
+        //       </div>
+        //     </div>`
+        `<div class="photo-card">
+          <a href="${largeImageURL}">
+            <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+            <div class="info">
+              <p class="info-item">
+                <b>likes ${likes}</b>
+              </p>
+              <p class="info-item">
+                <b>views ${views}</b>
+              </p>
+              <p class="info-item">
+                <b>comments ${comments}</b>
+              </p>
+              <p class="info-item">
+                <b>downloads ${downloads}</b>
+              </p>
+            </div>
+          </a>
+        </div>`
     )
     .join('');
 }
@@ -99,6 +128,11 @@ function onLoadMore() {
 }
 
 function processData(data) {
+    // функція працює коректно, але не виврдить те що написав про запит, а показує помилку. 
+        if (inputEl.value === '') {
+            Notiflix.Notify.error('Please enter a search query.');
+            return;
+        }
 
         galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
         if (currentPage !== totalPages) {
@@ -111,10 +145,15 @@ function processData(data) {
             Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
             buttonLoadMore.hidden = true;
         }
-    if (data.hits.length > 0) {
+        if (data.hits.length > 0) {
         const totalImagesFound = data.totalHits;
             Notiflix.Notify.success(
               `Hooray! We found ${totalImagesFound} images.`
             );
-        }
     }
+}
+
+let lightbox = new SimpleLightbox('.gallery2 a', {
+        captionDelay: 250,
+  //   captionsData: 'alt',
+});

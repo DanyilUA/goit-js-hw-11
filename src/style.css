@@ -1,3 +1,35 @@
-/* .hidden {
-    display: none;
-} */
+.load-more {
+  background-color: #ff0000;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.load-more:hover {
+  background-color: #ff3333;
+}
+
+.load-more:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #ff0000;
+}
+
+.submit {
+  background-color: #9151b6;
+  color: #f4eaea;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit:hover {
+  background-color: #57308e;
+}
+
+.submit:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #57308e;
+}

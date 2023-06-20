@@ -14,6 +14,11 @@ const buttonLoadMore = document.querySelector('.load-more');
 let currentPage = 1;
 let totalPages = 1;
 
+
+let lightbox = new SimpleLightbox('.gallery a', {
+    captionDelay: 250,
+});
+
 const BASE_URL = 'https://pixabay.com/api/';
 const API_KEY = '37452121-a108d404886ded7cf81df8024';
 const IMAGE = 'image_type=photo';
@@ -31,28 +36,28 @@ function handleSubmit(e) {
     
     getImage(inputValue)
     .then(data => processData(data)) 
-        .catch(error => {
-      console.log(error);
-      Notiflix.Notify.failure(
+    .catch(error => {
+        console.log(error);
+        Notiflix.Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
     });
 }
 
 async function getImage(inputValue, page) {
-  try {
-    const response = await axios.get(
-      `${BASE_URL}?key=${API_KEY}&q=${inputValue}&${IMAGE}&${ORIENTATION}&${SAFESEARCH}&page=${page}&per_page=40`
-    );
-        console.log(response);
+    try {
+    const response = await axios.get(`${BASE_URL}?key=${API_KEY}&q=${inputValue}&${IMAGE}&${ORIENTATION}&${SAFESEARCH}&page=${page}&per_page=40`);
+    console.log(response);
+
         const totalHits = response.data.totalHits;
         const hitsPerPage = response.data.hits.length;
-      totalPages = Math.ceil(totalHits / hitsPerPage);
+        totalPages = Math.ceil(totalHits / hitsPerPage);
 
         return response.data;
         } catch (error) {
-    console.log(error);
-  }
+        Notiflix.Notify.failure('Sorry, an error occurred while fetching images. Please try again.');
+        throw error;
+    }
 }
 
 function createMarkup(arr) {
@@ -67,24 +72,9 @@ function createMarkup(arr) {
         comments,
         downloads,
       }) =>
-        //   `<div class="photo-card">
-        //       <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-        //       <div class="info">
-        //         <p class="info-item">
-        //           <b>likes ${likes}</b>
-        //         </p>
-        //         <p class="info-item">
-        //           <b>views ${views}</b>
-        //         </p>
-        //         <p class="info-item">
-        //           <b>comments ${comments}</b>
-        //         </p>
-        //         <p class="info-item">
-        //           <b>downloads ${downloads}</b>
-        //         </p>
-        //       </div>
-        //     </div>`
-        `<div class="photo-card">
+    `<div class="card-container">
+
+        <div class="photo-card">
           <a href="${largeImageURL}">
             <img src="${webformatURL}" alt="${tags}" loading="lazy" />
             <div class="info">
@@ -102,7 +92,9 @@ function createMarkup(arr) {
               </p>
             </div>
           </a>
-        </div>`
+        </div>
+    </div>
+        `
     )
     .join('');
 }
@@ -117,6 +109,8 @@ function onLoadMore() {
     getImage(inputValue, currentPage)
         .then(data => { 
             galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
+            lightbox.refresh();
+
         }
       )
       .catch(error => {
@@ -135,25 +129,23 @@ function processData(data) {
         }
 
         galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-        if (currentPage !== totalPages) {
+        lightbox.refresh();
+
+            if (currentPage !== totalPages) {
             buttonLoadMore.hidden = false;
-    }   
+            }   
             if (currentPage === totalPages) {
                 Notiflix.Notify.info('We are sorry, but you have reached the end of search results.');
             } 
-        if (data.hits.length <= 0) {
+            if (data.hits.length <= 0) {
             Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
             buttonLoadMore.hidden = true;
-        }
-        if (data.hits.length > 0) {
-        const totalImagesFound = data.totalHits;
+            }
+            if (data.hits.length > 0) {
+            const totalImagesFound = data.totalHits;
             Notiflix.Notify.success(
               `Hooray! We found ${totalImagesFound} images.`
             );
     }
 }
 
-let lightbox = new SimpleLightbox('.gallery2 a', {
-        captionDelay: 250,
-  //   captionsData: 'alt',
-});

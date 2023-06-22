@@ -12,7 +12,7 @@ const galleryList = document.querySelector('.gallery');
 const buttonLoadMore = document.querySelector('.load-more');
 
 let currentPage = 1;
-let totalPages = 1;
+let totalPages = null;
 
 
 let lightbox = new SimpleLightbox('.gallery a', {
@@ -30,12 +30,14 @@ formEl.addEventListener('submit', handleSubmit);
 function handleSubmit(e) {
     e.preventDefault();
     
-
     galleryList.innerHTML = '';
     const inputValue = inputEl.value;
-    
-    getImage(inputValue)
-    .then(data => processData(data)) 
+    currentPage = 1;
+ 
+    getImage(inputValue, currentPage)
+        .then(data => {
+            processData(data);
+         })
     .catch(error => {
         console.log(error);
         Notiflix.Notify.failure(
@@ -46,12 +48,12 @@ function handleSubmit(e) {
 
 async function getImage(inputValue, page) {
     try {
-    const response = await axios.get(`${BASE_URL}?key=${API_KEY}&q=${inputValue}&${IMAGE}&${ORIENTATION}&${SAFESEARCH}&page=${page}&per_page=40`);
+     const response = await axios.get(`${BASE_URL}?key=${API_KEY}&q=${inputValue}&${IMAGE}&${ORIENTATION}&${SAFESEARCH}&page=${page}&per_page=40`);
     console.log(response);
 
         const totalHits = response.data.totalHits;
         const hitsPerPage = response.data.hits.length;
-        totalPages = Math.ceil(totalHits / hitsPerPage);
+        totalPages = totalPages ??  Math.ceil(totalHits / hitsPerPage);
 
         return response.data;
         } catch (error) {
@@ -107,12 +109,21 @@ function onLoadMore() {
     const inputValue = inputEl.value;
 
     getImage(inputValue, currentPage)
-        .then(data => { 
-            galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-            lightbox.refresh();
-
-        }
-      )
+      .then(data => {
+        galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
+        lightbox.refresh();
+          console.log(currentPage, totalPages);
+          if (currentPage === totalPages) {
+            
+            buttonLoadMore.hidden = true;
+            Notiflix.Notify.info(
+              'We are sorry, but you have reached the end of search results.'
+            )
+              }
+           else {
+            buttonLoadMore.hidden = false;
+          }
+      })
       .catch(error => {
         console.log(error);
         Notiflix.Notify.failure(
@@ -122,30 +133,33 @@ function onLoadMore() {
 }
 
 function processData(data) {
-    // функція працює коректно, але не виврдить те що написав про запит, а показує помилку. 
-        if (inputEl.value === '') {
-            Notiflix.Notify.error('Please enter a search query.');
-            return;
-        }
+  // функція працює коректно, але не виврдить те що написав про запит, а показує помилку.
+  if (inputEl.value === '') {
+    Notiflix.Notify.error('Please enter a search query.');
+    return;
+  }
 
-        galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-        lightbox.refresh();
+  galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
+    lightbox.refresh();
+    
+              if (currentPage === totalPages) {
+                buttonLoadMore.hidden = true;
+                Notiflix.Notify.info(
+                  'We are sorry, but you have reached the end of search results.'
+                );
+              } else {
+                buttonLoadMore.hidden = false;
+              }
 
-            if (currentPage !== totalPages) {
-            buttonLoadMore.hidden = false;
-            }   
-            if (currentPage === totalPages) {
-                Notiflix.Notify.info('We are sorry, but you have reached the end of search results.');
-            } 
-            if (data.hits.length <= 0) {
-            Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.');
-            buttonLoadMore.hidden = true;
-            }
-            if (data.hits.length > 0) {
-            const totalImagesFound = data.totalHits;
-            Notiflix.Notify.success(
-              `Hooray! We found ${totalImagesFound} images.`
-            );
-    }
+  if (data.hits.length <= 0) {
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+    buttonLoadMore.hidden = true;
+  }
+  if (data.hits.length > 0) {
+    const totalImagesFound = data.totalHits;
+    Notiflix.Notify.success(`Hooray! We found ${totalImagesFound} images.`);
+  }
 }
 

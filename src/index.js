@@ -10,9 +10,19 @@ const formEl = document.querySelector('.search-form');
 const inputEl = document.querySelector('input[name="searchQuery"]');
 const galleryList = document.querySelector('.gallery');
 const buttonLoadMore = document.querySelector('.load-more');
+const target = document.querySelector('.js-sentry');
 
 let currentPage = 1;
 let totalPages = null;
+
+let options = {
+  root: null, 
+  rootMargin: '300px',
+  threshold: 1.0,
+};
+
+
+let observer = new IntersectionObserver(onScrollLoad, options);
 
 
 let lightbox = new SimpleLightbox('.gallery a', {
@@ -27,12 +37,19 @@ const SAFESEARCH = 'safesearch=true';
 
 formEl.addEventListener('submit', handleSubmit);
 
+
 function handleSubmit(e) {
     e.preventDefault();
     
     galleryList.innerHTML = '';
-    const inputValue = inputEl.value;
+    const inputValue = inputEl.value.trim();
     currentPage = 1;
+
+        if (!inputValue) {
+            Notiflix.Notify.error('Please enter a search query.');
+            buttonLoadMore.hidden = true;
+          return;
+        }
  
     getImage(inputValue, currentPage)
         .then(data => {
@@ -53,7 +70,7 @@ async function getImage(inputValue, page) {
 
         const totalHits = response.data.totalHits;
         const hitsPerPage = response.data.hits.length;
-        totalPages = totalPages ??  Math.ceil(totalHits / hitsPerPage);
+        totalPages = Math.ceil(totalHits / hitsPerPage);
 
         return response.data;
         } catch (error) {
@@ -110,10 +127,9 @@ function onLoadMore() {
 
     getImage(inputValue, currentPage)
       .then(data => {
-        galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-        lightbox.refresh();
-          console.log(currentPage, totalPages);
-          if (currentPage === totalPages) {
+          galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
+          lightbox.refresh();
+           if (currentPage === totalPages) {
             
             buttonLoadMore.hidden = true;
             Notiflix.Notify.info(
@@ -133,11 +149,8 @@ function onLoadMore() {
 }
 
 function processData(data) {
+    console.log(inputEl);
   // функція працює коректно, але не виврдить те що написав про запит, а показує помилку.
-  if (inputEl.value === '') {
-    Notiflix.Notify.error('Please enter a search query.');
-    return;
-  }
 
   galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits));
     lightbox.refresh();
@@ -151,15 +164,32 @@ function processData(data) {
                 buttonLoadMore.hidden = false;
               }
 
-  if (data.hits.length <= 0) {
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    buttonLoadMore.hidden = true;
-  }
+
   if (data.hits.length > 0) {
     const totalImagesFound = data.totalHits;
     Notiflix.Notify.success(`Hooray! We found ${totalImagesFound} images.`);
   }
 }
+
+    document.addEventListener('scroll', onscroll);
+
+
+function onScrollLoad(entries, observer) {
+    entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+            currentPage += 1;
+            getImage(currentPage)
+                .then((data) => {
+                  galleryList.insertAdjacentHTML('beforeend', createMarkup(data.hits)
+                  );
+                    if (currentPage === totalPages) {
+                        observer.unobserve(target);
+                    }
+
+                })
+            .catch((error) => console.log(error))
+        }
+    })
+}
+observer.observe(target);
 
